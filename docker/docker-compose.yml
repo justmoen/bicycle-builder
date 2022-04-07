@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  nginx:
+    build: nginx
+    restart: on-failure
+    volumes:
+      # this will mount the api folder which contains the code to the docker container
+      - ${PWD}/api:/var/www/api:delegated
+      # this will mount the nginx logs so that you can check the logs for errors,
+      # without logging into the container
+      - ${PWD}/var/logs/nginx/:/var/log/nginx:delegated
+      # this will create the server config to serve the api
+      - ${PWD}/nginx/conf.d/api.conf:/etc/nginx/conf.d/api.conf:delegated
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+      - database
+    networks:
+      - monitoring
+
+  api:
+    build:
+      context: ./php-fpm
+    restart: on-failure
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: 1
+      PHP_DATE_TIMEZONE: ${PHP_DATE_TIMEZONE:-UTC}
+      XDEBUG_CONFIG: remote_host=127.0.0.1
+      PHP_IDE_CONFIG: serverName=localhost
+    ports:
+      - '9000:9000'
+    depends_on:
+      - database
+    volumes:
+      # this will mount the api folder which contains the code to the docker container
+      - ${PWD}/api:/var/www/api:delegated
+      # this will mount the custom `.ini` to the container
+      - ${PWD}/php-fpm/php.ini:/usr/local/etc/php/php.ini:ro
+    networks:
+      - monitoring
+
+  mongodb:
+    container_name: database
+    image: mongo
+    environment:
+      - MONGO_INITDB_DATABASE=bicycle
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - ./db-data:/data/db
+    ports:
+      - '27017-27019:27017-27019'
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  db-data:
+  var:
