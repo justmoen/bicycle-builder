@@ -6,8 +6,7 @@ RUN apt-get update && \
     docker-php-ext-install -j$(nproc) zip opcache intl && \
     docker-php-ext-enable apcu sodium && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-    pecl install mongodb && \
-    echo "extension=mongodb.so" >> /usr/local/etc/php/php.ini;
+    pecl install mongodb
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN chmod +x /usr/bin/composer
